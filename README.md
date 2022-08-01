@@ -27,8 +27,8 @@ func main() {
 	}
 
 	// Delete the key
-	if tr.Delete(rbtree.Int(4)) {
-		fmt.Println("Deleted", 4)
+	if removeItem := tr.Delete(rbtree.Int(4)); removeItem != nil {
+		fmt.Println("Deleted", removeItem)
 	}
 
 	// Traverse the tree
@@ -70,8 +70,8 @@ func main() {
 	}
 
 	// Delete the key
-	if tr.Delete(KV{Key: 4}) {
-		fmt.Println("Deleted", 4)
+	if removeItem := tr.Delete(KV{Key: 4}); removeItem != nil {
+		fmt.Println("Deleted", removeItem)
 	}
 
 	// Traverse the list
