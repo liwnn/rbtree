@@ -9,6 +9,8 @@ A case for `int` items.
 package main
 
 import (
+	"fmt"
+
     "github.com/liwnn/rbtree"
 )
 
@@ -43,6 +45,8 @@ A case for `struct` items:
 package main
 
 import (
+	"fmt"
+
     "github.com/liwnn/rbtree"
 )
 
