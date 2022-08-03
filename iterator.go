@@ -14,6 +14,10 @@ func (it *Iterator) Next() {
 	it.x = n
 }
 
+func (it *Iterator) Prev() {
+	it.x = it.t.predecessor(it.x)
+}
+
 func (it *Iterator) Value() Item {
 	return it.x.item
 }

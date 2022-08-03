@@ -139,13 +139,16 @@ func (t *RBTree) Insert(item Item) {
 		panic("nil item is not allowed in RBTree")
 	}
 
+	insertLeft := true
 	y := t.nil
 	for x := t.root; x != t.nil; {
 		y = x
 		if item.Less(x.item) {
 			x = x.left
+			insertLeft = true
 		} else if x.item.Less(item) {
 			x = x.right
+			insertLeft = false
 		} else {
 			x.item = item
 			return
@@ -157,7 +160,7 @@ func (t *RBTree) Insert(item Item) {
 	z.p = y
 	if y == t.nil {
 		t.root = z
-	} else if item.Less(y.item) {
+	} else if insertLeft {
 		y.left = z
 	} else {
 		y.right = z
@@ -293,6 +296,13 @@ func (t *RBTree) minimum(x *node) *node {
 	return x
 }
 
+func (t *RBTree) maximum(x *node) *node {
+	for x.right != t.nil {
+		x = x.right
+	}
+	return x
+}
+
 func (t *RBTree) deleteFixup(x *node) {
 	for x != t.root && x.color == BLACK {
 		if x == x.p.left {
@@ -351,6 +361,18 @@ func (t *RBTree) deleteFixup(x *node) {
 	x.color = BLACK
 }
 
+func (t *RBTree) predecessor(x *node) *node {
+	if x.left != t.nil {
+		return t.maximum(x.left)
+	}
+	y := x.p
+	for y != t.nil && x == y.left {
+		x = y
+		y = y.p
+	}
+	return y
+}
+
 func (t *RBTree) successor(x *node) *node {
 	if x.right != t.nil {
 		return t.minimum(x.right)
@@ -379,6 +401,10 @@ func (a Int) Less(b Item) bool {
 
 // PrintTree 打印树
 func PrintTree(t *RBTree) {
+	const (
+		nilStr = "nil"
+		indent = 2
+	)
 	levelNode := make(map[int][]*node)
 	levelNode[0] = []*node{t.root}
 	for level := 0; ; level++ {
@@ -405,23 +431,48 @@ func PrintTree(t *RBTree) {
 	}
 	depth := len(levelNode)
 	for j := 0; j < depth; j++ {
-		w := 1 << (depth - j + 1)
+		w := indent << (depth - 1 - j)
 		if j > 0 {
 			for i := 0; i < 1<<(j-1); i++ {
-				fmt.Printf("%*c", w+1, ' ')
-				for k := 0; k < w-3; k++ {
-					fmt.Printf("_")
+				if levelNode[j][i*2] == nil {
+					fmt.Printf("%*c", w*4, ' ')
+				} else {
+					fmt.Printf("%*c", w, ' ') // w
+					if w < 3 {
+						leftW := 3
+						if w == 1 {
+							fmt.Printf("| ")
+						} else {
+							fmt.Printf("/ \\")
+						}
+						leftW -= 3 / w
+						n := w - 3%w + leftW
+						fmt.Printf("%*c", n, ' ')
+					} else {
+						fmt.Printf("%c", ' ')
+						for k := 0; k < w-3; k++ {
+							fmt.Printf("_")
+						}
+						fmt.Printf("/ \\")
+						for k := 0; k < w-3; k++ {
+							fmt.Printf("_")
+						}
+						fmt.Printf("%*c", w+2, ' ')
+					}
 				}
-				fmt.Printf("/ \\")
-				for k := 0; k < w-3; k++ {
-					fmt.Printf("_")
-				}
-				fmt.Printf("%*c", w+2, ' ')
 			}
 
 			fmt.Printf("\n")
 			for i := 0; i < 1<<(j-1); i++ {
-				fmt.Printf("%*c%*c%*c", w+1, '/', w*2-2, '\\', w+1, ' ')
+				if levelNode[j][i*2] == nil {
+					fmt.Printf("%*c", w*4, ' ')
+				} else {
+					if w < 3 {
+						fmt.Printf("%*c%*c%*c", w, '/', w*2, '\\', w, ' ')
+					} else {
+						fmt.Printf("%*c%*c%*c", w+1, '/', w*2-2, '\\', w+1, ' ')
+					}
+				}
 			}
 			fmt.Printf("\n")
 		}
@@ -431,19 +482,30 @@ func PrintTree(t *RBTree) {
 				fmt.Printf("%*c", w*2, ' ')
 				continue
 			}
-			if n != t.nil {
-				fmt.Printf("%*c", w-2, ' ') // (key)
-				if n.color == RED {
-					fmt.Printf("%c[1;41;37m(%d)%c[0m", 0x1B, n.item, 0x1B)
-				} else {
-					fmt.Printf("%c[1;40;37m(%d)%c[0m", 0x1B, n.item, 0x1B)
-				}
-				fmt.Printf("%*c", w-1, ' ')
-			} else {
-				fmt.Printf("%*c", w-2, ' ') // (key)
-				fmt.Printf("%c[1;40;37m%v%c[0m", 0x1B, "nil", 0x1B)
-				fmt.Printf("%*c", w-1, ' ')
+			key := fmt.Sprintf("%v", n.item)
+			if n.item == nil {
+				key = nilStr
 			}
+			shiftLeft := (len(key) + 1) / 2
+			if w < 3 {
+				if i%2 == 0 || len(key) > 2 {
+					shiftLeft = (len(key))/2 + 1
+				} else {
+					shiftLeft = (len(key) + 1) / 2
+				}
+			}
+			if shiftLeft > w {
+				shiftLeft = w
+			}
+			if w > shiftLeft {
+				fmt.Printf("%*c", w-shiftLeft, ' ') // (key)
+			}
+			if n.color == RED {
+				fmt.Printf("%c[1;41;37m%v%c[0m", 0x1B, key, 0x1B)
+			} else {
+				fmt.Printf("%c[1;40;37m%v%c[0m", 0x1B, key, 0x1B)
+			}
+			fmt.Printf("%*c", w-(len(key)-shiftLeft), ' ')
 		}
 		fmt.Printf("\n")
 	}
