@@ -1,9 +1,5 @@
 package rbtree
 
-import (
-	"fmt"
-)
-
 const (
 	DefaultFreeListSize = 32
 )
@@ -389,124 +385,41 @@ func (t *RBTree) Len() int {
 	return t.length
 }
 
-func (t *RBTree) NewAscendIterator() *Iterator {
-	return &Iterator{t: t, x: t.minimum(t.root)}
+func (t *RBTree) morris(cur *node, f func(Item)) {
+	// 如果cur无左孩子，cur向右移动（cur=cur.right）
+	// 如果cur有左孩子，找到cur左子树上最右的节点，记为mostright
+	// 如果mostright的right指针指向空，让其指向cur，cur向左移动（cur=cur.left）
+	// 如果mostright的right指针指向cur，让其指向空，cur向右移动（cur=cur.right）
+	var mostRight *node
+	for cur != t.nil {
+		mostRight = cur.left
+		if mostRight != t.nil {
+			for mostRight.right != t.nil && mostRight.right != cur {
+				mostRight = mostRight.right
+			}
+			if mostRight.right == t.nil {
+				mostRight.right = cur
+				cur = cur.left
+				continue
+			} else {
+				mostRight.right = t.nil
+			}
+		}
+		f(cur.item)
+		cur = cur.right
+	}
+}
+
+func (t *RBTree) Ascend(f func(Item)) {
+	t.morris(t.root, f)
+}
+
+func (t *RBTree) NewAscendIterator() Iterator {
+	return Iterator{t: t, x: t.minimum(t.root)}
 }
 
 type Int int
 
 func (a Int) Less(b Item) bool {
 	return a < b.(Int)
-}
-
-// PrintTree 打印树
-func PrintTree(t *RBTree) {
-	const (
-		nilStr = "nil"
-		indent = 2
-	)
-	levelNode := make(map[int][]*node)
-	levelNode[0] = []*node{t.root}
-	for level := 0; ; level++ {
-		var nodes = levelNode[level]
-		var next []*node
-		for _, n := range nodes {
-			if n != nil {
-				next = append(next, n.left, n.right)
-			} else {
-				next = append(next, nil, nil)
-			}
-		}
-		var exit = true
-		for _, v := range next {
-			if v != nil {
-				exit = false
-				break
-			}
-		}
-		if exit {
-			break
-		}
-		levelNode[level+1] = next
-	}
-	depth := len(levelNode)
-	for j := 0; j < depth; j++ {
-		w := indent << (depth - 1 - j)
-		if j > 0 {
-			for i := 0; i < 1<<(j-1); i++ {
-				if levelNode[j][i*2] == nil {
-					fmt.Printf("%*c", w*4, ' ')
-				} else {
-					fmt.Printf("%*c", w, ' ') // w
-					if w < 3 {
-						leftW := 3
-						if w == 1 {
-							fmt.Printf("| ")
-						} else {
-							fmt.Printf("/ \\")
-						}
-						leftW -= 3 / w
-						n := w - 3%w + leftW
-						fmt.Printf("%*c", n, ' ')
-					} else {
-						fmt.Printf("%c", ' ')
-						for k := 0; k < w-3; k++ {
-							fmt.Printf("_")
-						}
-						fmt.Printf("/ \\")
-						for k := 0; k < w-3; k++ {
-							fmt.Printf("_")
-						}
-						fmt.Printf("%*c", w+2, ' ')
-					}
-				}
-			}
-
-			fmt.Printf("\n")
-			for i := 0; i < 1<<(j-1); i++ {
-				if levelNode[j][i*2] == nil {
-					fmt.Printf("%*c", w*4, ' ')
-				} else {
-					if w < 3 {
-						fmt.Printf("%*c%*c%*c", w, '/', w*2, '\\', w, ' ')
-					} else {
-						fmt.Printf("%*c%*c%*c", w+1, '/', w*2-2, '\\', w+1, ' ')
-					}
-				}
-			}
-			fmt.Printf("\n")
-		}
-		for i := 0; i < 1<<j; i++ {
-			n := levelNode[j][i]
-			if n == nil {
-				fmt.Printf("%*c", w*2, ' ')
-				continue
-			}
-			key := fmt.Sprintf("%v", n.item)
-			if n.item == nil {
-				key = nilStr
-			}
-			shiftLeft := (len(key) + 1) / 2
-			if w < 3 {
-				if i%2 == 0 || len(key) > 2 {
-					shiftLeft = (len(key))/2 + 1
-				} else {
-					shiftLeft = (len(key) + 1) / 2
-				}
-			}
-			if shiftLeft > w {
-				shiftLeft = w
-			}
-			if w > shiftLeft {
-				fmt.Printf("%*c", w-shiftLeft, ' ') // (key)
-			}
-			if n.color == RED {
-				fmt.Printf("%c[1;41;37m%v%c[0m", 0x1B, key, 0x1B)
-			} else {
-				fmt.Printf("%c[1;40;37m%v%c[0m", 0x1B, key, 0x1B)
-			}
-			fmt.Printf("%*c", w-(len(key)-shiftLeft), ' ')
-		}
-		fmt.Printf("\n")
-	}
 }

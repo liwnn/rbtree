@@ -187,3 +187,32 @@ func BenchmarkDelete(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkAscend(b *testing.B) {
+	tr := New()
+	for _, item := range perm(benchmarkTreeSize) {
+		tr.Insert(item)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tr.Ascend(func(i Item) {
+
+		})
+	}
+}
+
+func BenchmarkAscendIterater(b *testing.B) {
+	tr := New()
+	for _, item := range perm(benchmarkTreeSize) {
+		tr.Insert(item)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		it := Iterator{
+			t: tr,
+			x: tr.minimum(tr.root),
+		}
+		for ; it.Valid(); it.Next() {
+		}
+	}
+}
